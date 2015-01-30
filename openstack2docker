@@ -1,0 +1,74 @@
+#!/bin/bash
+
+if [ $# != 2 ]; then
+	cat <<EOF
+usage:
+
+docker run -e OS_USERNAME=<openstack username> \
+	-e OS_TENANT_NAME=<openstack tenant name> \
+	-e OS_PASSWORD=<openstack password> \
+	-e OS_AUTH_URL=<openstack url> \
+	-e DOCKER_HOST=<docker host> \
+	--privileged \
+	--rm \
+	-v /dev:/dev \
+	pedjak/openstack2docker <openstack image> <docker image tag>	
+
+EOF
+	
+	exit 1
+fi
+
+set -e
+
+openstack_img="$1"
+docker_img=$2
+working_dir="/tmp/$openstack_img"
+
+mkdir -p "$working_dir"
+
+cd "$working_dir"
+
+echo "Downloading $openstack_img from openstack..." 
+
+glance image-download --file "${openstack_img}.img" "${openstack_img}"
+
+echo "done, converting to raw format..."
+
+# convert to raw format
+qemu-img convert -O raw "${openstack_img}.img" "${openstack_img}.raw"
+
+rm "${openstack_img}.img"
+
+echo done
+
+# detect offset of a non-swap partition
+offset=`parted -m -s "${openstack_img}.raw" unit b print | tail -n2 | grep -v swap | cut -d ':' -f 2 | cut -d B -f 1`
+
+[ -z "$offset" ] && echo "no non-swap partition found!" && exit 1
+
+echo "partition offset at $offset"
+
+mkdir -p disk
+
+mount -o loop,offset=$offset "${openstack_img}.raw" disk
+
+echo "partition mounted"
+
+cd disk
+
+echo "Importing into docker as $docker_img ..."
+
+tar cpf - . | docker import - "$docker_img"
+
+cd ..
+
+umount disk
+
+cd
+
+rm -rf "$working_dir"
+
+echo done
+
+
