@@ -1,8 +1,8 @@
 Purpose
 =======
 
-Docker container for converting an [OpenStack|http://www.openstack.org] image 
-into the equivalent [Docker|http://www.docker.com] image
+Docker container for converting an [OpenStack](http://www.openstack.org) image 
+into the equivalent [Docker](http://www.docker.com) image
 
 Usage
 =====
