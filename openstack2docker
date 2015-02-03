@@ -43,7 +43,7 @@ rm "${openstack_img}.img"
 echo done
 
 # detect offset of a non-swap partition
-offset=`parted -m -s "${openstack_img}.raw" unit b print | tail -n2 | grep -v swap | cut -d ':' -f 2 | cut -d B -f 1`
+offset=`parted -m -s "${openstack_img}.raw" unit b print | tail -n+3 | grep -v swap | cut -d ':' -f 2 | cut -d B -f 1`
 
 [ -z "$offset" ] && echo "no non-swap partition found!" && exit 1
 
